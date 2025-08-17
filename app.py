@@ -6,27 +6,33 @@ import requests
 import os
 
 # -------------------
-# Download & Load Model
+# Model download & load
 # -------------------
 MODEL_PATH = "random_forest_booking_pipeline.pkl"
-# Replace this with your hosted model URL (Google Drive / S3)
-MODEL_URL = "https://drive.google.com/file/d/1LsyO9KETxdsI4OZg54LdqkteS2NqEpnx/view?usp=drive_link"
+# Use environment variable if available, otherwise default Google Drive link
+MODEL_URL = os.environ.get(
+    "MODEL_URL",
+    "https://drive.google.com/uc?export=download&id=1LsyO9KETxdsI4OZg54LdqkteS2NqEpnx"
+)
+
 
 @st.cache_resource
 def load_model():
     # Download model if not present
     if not os.path.exists(MODEL_PATH):
         st.info("Downloading large model, please wait...")
-        response = requests.get(MODEL_URL, stream=True)
-        with open(MODEL_PATH, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+        with requests.get(MODEL_URL, stream=True) as r:
+            r.raise_for_status()
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
         st.success("Model downloaded!")
 
     # Load model
     model = joblib.load(MODEL_PATH)
     return model
+
 
 model = load_model()
 
@@ -57,7 +63,6 @@ flight_hour = st.slider("Flight Hour (0-23)", 0, 23, 17)
 flight_day = st.selectbox("Flight Day", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
 route = st.text_input("Route (e.g. AKLKUL)", "AKLKUL")
 booking_origin = st.text_input("Booking Origin (e.g. India, Malaysia)", "India")
-
 wants_extra_baggage = st.selectbox("Wants Extra Baggage?", ["No", "Yes"])
 wants_preferred_seat = st.selectbox("Wants Preferred Seat?", ["No", "Yes"])
 wants_in_flight_meals = st.selectbox("Wants In-Flight Meals?", ["No", "Yes"])
