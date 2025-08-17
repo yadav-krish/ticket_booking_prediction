@@ -2,37 +2,29 @@ import streamlit as st
 import pandas as pd
 import joblib
 import json
-import requests
 import os
+import gdown
 
 # -------------------
-# Model download & load
+# Config
 # -------------------
 MODEL_PATH = "random_forest_booking_pipeline.pkl"
-# Use environment variable if available, otherwise default Google Drive link
+# Google Drive direct download link
 MODEL_URL = os.environ.get(
     "MODEL_URL",
     "https://drive.google.com/uc?export=download&id=1LsyO9KETxdsI4OZg54LdqkteS2NqEpnx"
 )
 
-
+# -------------------
+# Load Model
+# -------------------
 @st.cache_resource
 def load_model():
-    # Download model if not present
     if not os.path.exists(MODEL_PATH):
-        st.info("Downloading large model, please wait...")
-        with requests.get(MODEL_URL, stream=True) as r:
-            r.raise_for_status()
-            with open(MODEL_PATH, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
+        st.info("Downloading large model from Google Drive, please wait...")
+        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
         st.success("Model downloaded!")
-
-    # Load model
-    model = joblib.load(MODEL_PATH)
-    return model
-
+    return joblib.load(MODEL_PATH)
 
 model = load_model()
 
